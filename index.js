@@ -259,7 +259,7 @@ function spawnAsteroids (){
         let clr = `hsl(${Math.random() * 360}, 50%, 50%)`;
         asteroids.push(new Asteroid(x,y,radius,clr,velocity))
         //console.log(asteroids)
-    },1200)
+    },1500)
 }
 
 st.addEventListener("click",()=>{
