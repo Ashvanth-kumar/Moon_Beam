@@ -96,7 +96,7 @@ class Particle{
         this.velocity.y *= friction
         this.x=this.x + this.velocity.x
         this.y= this.y + this.velocity.y
-        this.alpha -= 0.009
+        this.alpha -= 0.01
     }  
 }
 
