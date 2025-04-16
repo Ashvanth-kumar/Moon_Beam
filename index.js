@@ -3,6 +3,7 @@ console.log(gsap)
 const canva = document.querySelector("canvas")
 canva.height = innerHeight
 canva.width = innerWidth
+
 const ctx = canva.getContext("2d")
 
 const score = document.getElementById("Score")
@@ -10,24 +11,26 @@ const st = document.getElementById("strt")
 const st_board = document.getElementById("startboard")
 const final_score = document.getElementById("final_score")
 
-// Player class
 class Player {
     constructor(x, y, r, clr) {
         this.x = x
         this.y = y
         this.radius = r
-        this.colour = clr   
+        this.colour = clr
     }
-
     draw() {
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, true)
-        ctx.fillStyle = this.colour  
+        ctx.fillStyle = this.colour
         ctx.fill()
     }
 }
 
-// Bullet class
+const x = canva.width / 2
+const y = canva.height / 2
+let player1 = new Player(x, y, 25, "white")
+player1.draw()
+
 class Bullet {
     constructor(x, y, r, clr, velocity) {
         this.x = x
@@ -39,17 +42,16 @@ class Bullet {
     draw() {
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, true)
-        ctx.fillStyle = this.colour  
+        ctx.fillStyle = this.colour
         ctx.fill()
     }
     update() {
         this.draw()
         this.x += this.velocity.x
         this.y += this.velocity.y
-    }  
+    }
 }
 
-// Particle class
 const friction = 0.99
 class Particle {
     constructor(x, y, r, clr, velocity) {
@@ -65,7 +67,7 @@ class Particle {
         ctx.globalAlpha = this.alpha
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, true)
-        ctx.fillStyle = this.colour  
+        ctx.fillStyle = this.colour
         ctx.fill()
         ctx.restore()
     }
@@ -76,58 +78,30 @@ class Particle {
         this.x += this.velocity.x
         this.y += this.velocity.y
         this.alpha -= 0.01
-    }  
+    }
 }
 
-// Asteroid class
-class Asteroid {
-    constructor(x, y, r, clr, velocity) {
-        this.x = x
-        this.y = y
-        this.radius = r
-        this.colour = clr
-        this.velocity = velocity
-    }
-    draw() {
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, true)
-        ctx.fillStyle = this.colour  
-        ctx.fill()
-    }
-    update() {
-        this.draw()
-        this.x += this.velocity.x
-        this.y += this.velocity.y
-    }  
-}
-
-// Global variables
-let player1
 let bullets = []
 let asteroids = []
 let particles = []
-let points = 0
 let shootId
 let asteroidIntervalId
+let points = 0
 
-// Center coordinates
-const x = canva.width / 2
-const y = canva.height / 2
-
-// Initialize / reset game state
 function init() {
     points = 0
     player1 = new Player(x, y, 25, "white")
+
     bullets.length = 0
     asteroids.length = 0
     particles.length = 0
+
     score.innerHTML = points
 
-    // Clear previous asteroid spawner
-    clearInterval(asteroidIntervalId)
+    if (asteroidIntervalId) clearInterval(asteroidIntervalId)
+    if (shootId) cancelAnimationFrame(shootId)
 }
 
-// Game loop
 function shoot() {
     shootId = requestAnimationFrame(shoot)
 
@@ -137,11 +111,8 @@ function shoot() {
     player1.draw()
 
     particles.forEach((p, i) => {
-        if (p.alpha <= 0) {
-            particles.splice(i, 1)
-        } else {
-            p.update()
-        }
+        if (p.alpha <= 0) particles.splice(i, 1)
+        else p.update()
     })
 
     bullets.forEach((b, i) => {
@@ -165,14 +136,11 @@ function shoot() {
             const dist = Math.hypot(b.x - a.x, b.y - a.y)
             if (dist - a.radius - b.radius < 1) {
                 for (let i = 0; i < a.radius * 2; i++) {
-                    particles.push(
-                        new Particle(b.x, b.y, Math.random() * 2, a.colour, {
-                            x: (Math.random() - 0.5) * (Math.random() * 6),
-                            y: (Math.random() - 0.5) * (Math.random() * 6)
-                        })
-                    )
+                    particles.push(new Particle(b.x, b.y, Math.random() * 2, a.colour, {
+                        x: (Math.random() - 0.5) * (Math.random() * 6),
+                        y: (Math.random() - 0.5) * (Math.random() * 6)
+                    }))
                 }
-
                 if (a.radius - 15 > 10) {
                     points += 100
                     score.innerHTML = points
@@ -189,12 +157,40 @@ function shoot() {
     })
 }
 
-// Spawn new asteroids
+window.addEventListener("click", (event) => {
+    const angle = Math.atan2(event.clientY - canva.height / 2, event.clientX - canva.width / 2)
+    const velocity = {
+        x: Math.cos(angle) * 2.5,
+        y: Math.sin(angle) * 2.5
+    }
+    bullets.push(new Bullet(canva.width / 2, canva.height / 2, 10, player1.colour, velocity))
+})
+
+class Asteroid {
+    constructor(x, y, r, clr, velocity) {
+        this.x = x
+        this.y = y
+        this.radius = r
+        this.colour = clr
+        this.velocity = velocity
+    }
+    draw() {
+        ctx.beginPath()
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, true)
+        ctx.fillStyle = this.colour
+        ctx.fill()
+    }
+    update() {
+        this.draw()
+        this.x += this.velocity.x
+        this.y += this.velocity.y
+    }
+}
+
 function spawnAsteroids() {
     asteroidIntervalId = setInterval(() => {
         const radius = Math.random() * (40 - 10) + 10
         let x, y
-
         if (Math.random() < 0.5) {
             x = Math.random() < 0.5 ? 0 - radius : canva.width + radius
             y = Math.random() * canva.height
@@ -208,23 +204,11 @@ function spawnAsteroids() {
             x: Math.cos(angle) * 0.75,
             y: Math.sin(angle) * 0.75
         }
-
-        const clr = `hsl(${Math.random() * 360}, 50%, 50%)`
+        let clr = `hsl(${Math.random() * 360}, 50%, 50%)`
         asteroids.push(new Asteroid(x, y, radius, clr, velocity))
     }, 1700)
 }
 
-// Fire bullets on click
-window.addEventListener(`click`, (event) => {
-    const angle = Math.atan2(event.clientY - canva.height / 2, event.clientX - canva.width / 2)
-    const velocity = {
-        x: Math.cos(angle) * 2.5,
-        y: Math.sin(angle) * 2.5
-    }
-    bullets.push(new Bullet(canva.width / 2, canva.height / 2, 10, player1.colour, velocity))
-})
-
-// Start button event listener
 st.addEventListener("click", () => {
     init()
     shoot()
